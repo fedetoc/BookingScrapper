@@ -1,8 +1,3 @@
-.ipynb_checkpoints/
-__pycache__/
-database/
-modules/ipynb_checkpoints/
-modules/__pycache__/
-main/ipynb_checkpoints/
-main/__pycache__/
-main/database/
+.ipynb_checkpoints
+__pycache__
+database
