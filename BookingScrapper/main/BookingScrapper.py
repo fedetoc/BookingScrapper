@@ -179,7 +179,7 @@ class BookingScrapper:
         if len(self.__hotel_list) == 0:
             get_hotels(5)
         results = []
-        for hotel in self.__hotel_list[:3]:
+        for hotel in self.__hotel_list:
             self.__driver.get(hotel.bookingLink);
             time.sleep(wait_secs_after_load);
             offers_list = self.__get_webelement_by_xpath_key("RoomTableRow")
