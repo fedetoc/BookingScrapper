@@ -109,7 +109,7 @@ class DatabaseHandler:
             raise(self.__construct_sqlite_exception(err, f'insertar registros en tabla {tbl}'))
         print(f'Se han insertado {len(data)} registros en la tabla {tbl}')
 
-    def get_all_cols_and_rows_from_tbl(self, tbl:str, include_colnames = False, as_df = False):
+    def get_all_cols_and_rows_from_tbl(self, tbl:str, include_colnames = False):
         if self.__table_exists_in_db(tbl) == False:
             raise(Exception(f'La tabla {tbl} no existe en la presente base de datos'))
             return
@@ -141,7 +141,7 @@ class DatabaseHandler:
             return None
         return result
 
-    def obtener_cant_filas(self, tbl:str):
+    def get_row_count(self, tbl:str):
         query = self.__common_queries["ObtenerCantidadFilasDeTabla"] \
                 .replace('{TABLE_NAME}', tbl)
         try:
