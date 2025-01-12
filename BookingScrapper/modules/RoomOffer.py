@@ -42,7 +42,11 @@ class RoomOffer:
     def __get_taxes(self):
         taxes_el = self.__row_cells[1+self.__first_room_offer] \
                     .find(lambda tag: tag.has_attr('data-excl-charges-raw'))
-        return float(taxes_el.get('data-excl-charges-raw'))
+        try:
+            taxes = float(taxes_el.get('data-excl-charges-raw'))
+            return taxes
+        except ValueError:
+            return -1.0
 
     def __get_ammount_occupants(self):
         cant_huespedes_el = self.__find_child_el_by_locator_key(
