@@ -77,6 +77,9 @@ class BookingScrapper:
         self.currency = "USD"
         self.__driver = self.__get_webdriver() 
 
+    def __del__(self):
+        self.end_driver_session()
+
     def __get_webdriver(self):
         s = Session()
         dr = webdriver.Chrome()
@@ -141,6 +144,9 @@ class BookingScrapper:
         prop_elements = self.__get_webelement_by_xpath_key("HotelCard")
         return [Hotel.parse_html(f'<div>{elem.get_attribute('innerHTML')}</div>') for elem in prop_elements]
 
+    def __close_tab(self):
+        self.__driver.close()
+    
     def prepare_request (self):
         method = 'GET'
         parameters = {
@@ -171,6 +177,7 @@ class BookingScrapper:
         self.make_request()
         self.__close_dialog_main_page(2)
         self.__hotel_list = self.__extract_hotel_cards_html(pages, wait_before_page_change)
+        self.__close_tab()
         return self.__hotel_list
 
     def get_room_offers(self, wait_secs_after_load = 5):
@@ -207,6 +214,7 @@ class BookingScrapper:
                     if (not first_cell_next_row.get_attribute('rowspan') is None):
                         results.append(result_dic.copy())
         self.__rooms_and_offers_list = results
+        self.__close_tab()
         return results
         
     def save_to_db_sqlite(self, db_dir:str = None):
@@ -249,5 +257,8 @@ class BookingScrapper:
          dbh.insert_into_table(tbl, data_to_insert[tbl])
         
         return dbh
+
+    def end_driver_session(self):
+        self.__driver.quit()
                 
                 

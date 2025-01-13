@@ -160,6 +160,16 @@ Once finished with the db operations, it's important to close it to avoid memory
 
 ```
 
+### End driver session
+
+Once finished with the scrapper operations, you can end the session and release resources by calling the following:
+
+```
+
+    # End webdriver session
+    scraper.end_driver_session()
+
+```
 
 ## Disclaimer
 
