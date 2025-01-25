@@ -185,6 +185,7 @@ class BookingScrapper:
         if len(self.__hotel_list) == 0:
             get_hotels(5)
         results = []
+        i = 0
         for hotel in self.__hotel_list:
             fail_to_fetch = False
             self.__driver.get(hotel.bookingLink);
@@ -200,6 +201,7 @@ class BookingScrapper:
                         fail_to_fetch = True
                         break;
             if fail_to_fetch:
+                i = i+1
                 continue;
             time.sleep(wait_secs_after_load);
             offers_list = self.__get_webelement_by_xpath_key("RoomTableRow")
@@ -226,6 +228,7 @@ class BookingScrapper:
                     first_cell_next_row = self.__get_child_webelement_by_tag('td', offers_list[it+1])[0]
                     if (not first_cell_next_row.get_attribute('rowspan') is None):
                         results.append(result_dic.copy())
+            i = i+1
         self.__rooms_and_offers_list = results
         return results
         
