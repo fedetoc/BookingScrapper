@@ -25,7 +25,8 @@ class BookingScrapper:
         'RoomTableRow': '//table[@id="hprt-table"]/tbody/tr',
         'RoomTableRowAllCells': '//td',
         'RoomTableLeadingRow': '//td[1][@rowspan]',
-        'HotelHighlights': '//div[@data-testid="property-most-popular-facilities-wrapper"]'
+        'HotelHighlights': '//div[@data-testid="property-most-popular-facilities-wrapper"]',
+        'Error404': '//div[@class="wrapper-404"]'
     }
     __hotel_list = []
     __rooms_and_offers_list = []
@@ -76,9 +77,6 @@ class BookingScrapper:
         self.checkout_date = checkout_date
         self.currency = "USD"
         self.__driver = self.__get_webdriver() 
-
-    def __del__(self):
-        self.end_driver_session()
 
     def __get_webdriver(self):
         s = Session()
@@ -131,22 +129,24 @@ class BookingScrapper:
             time.sleep(wait_after); # 2
 
     def __extract_hotel_cards_html(self, pages: int, wait: int):
+        prop_elements = []
+        amm_hotel_els = 0
         for i in range(pages):
             btn_load_more_xpath = self.__xpath_dic["BtnLoadMoreResults"]
             if self.__is_elem_present(btn_load_more_xpath) == False:
                 self.__scroll_to_element_by_key("LastHotelCard")
+                prop_elements = self.__get_webelement_by_xpath_key("HotelCard")
+                if len(prop_elements) == amm_hotel_els:
+                    break;
+                amm_hotel_els = len(prop_elements)
             else:
                 btn_el = self.__get_webelement_by_xpath_key("BtnLoadMoreResults", els_list=False)
                 self.__scroll_to_element(btn_el)
                 time.sleep(2)
                 self.__click_btn_with_script(btn_el)
             time.sleep(wait)
-        prop_elements = self.__get_webelement_by_xpath_key("HotelCard")
-        return [Hotel.parse_html(f'<div>{elem.get_attribute('innerHTML')}</div>') for elem in prop_elements]
+        return [Hotel.parse_html(f'<div>{elem.get_attribute("innerHTML")}</div>') for elem in prop_elements]
 
-    def __close_tab(self):
-        self.__driver.close()
-    
     def prepare_request (self):
         method = 'GET'
         parameters = {
@@ -177,7 +177,6 @@ class BookingScrapper:
         self.make_request()
         self.__close_dialog_main_page(2)
         self.__hotel_list = self.__extract_hotel_cards_html(pages, wait_before_page_change)
-        self.__close_tab()
         return self.__hotel_list
 
     def get_room_offers(self, wait_secs_after_load = 5):
@@ -187,7 +186,21 @@ class BookingScrapper:
             get_hotels(5)
         results = []
         for hotel in self.__hotel_list:
+            fail_to_fetch = False
             self.__driver.get(hotel.bookingLink);
+            error_load_el = self.__xpath_dic["Error404"]
+            if self.__is_elem_present(error_load_el):
+                retries = list(range(3))
+                for i in retries:
+                    self.__driver.get(hotel.bookingLink);
+                    time.sleep(wait_secs_after_load);
+                    if self.__is_elem_present(error_load_el) == False:
+                        break;
+                    if i+1 == len(retries):
+                        fail_to_fetch = True
+                        break;
+            if fail_to_fetch:
+                continue;
             time.sleep(wait_secs_after_load);
             offers_list = self.__get_webelement_by_xpath_key("RoomTableRow")
             highlights_el = self.__get_webelement_by_xpath_key("HotelHighlights")[0]
@@ -214,7 +227,6 @@ class BookingScrapper:
                     if (not first_cell_next_row.get_attribute('rowspan') is None):
                         results.append(result_dic.copy())
         self.__rooms_and_offers_list = results
-        self.__close_tab()
         return results
         
     def save_to_db_sqlite(self, db_dir:str = None):
@@ -257,8 +269,5 @@ class BookingScrapper:
          dbh.insert_into_table(tbl, data_to_insert[tbl])
         
         return dbh
-
-    def end_driver_session(self):
-        self.__driver.quit()
                 
                 
