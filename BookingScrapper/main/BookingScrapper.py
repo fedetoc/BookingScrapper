@@ -34,6 +34,8 @@ class BookingScrapper:
               [
                 ("hotel_id", "integer"),
                 ("nombre", "text"),
+                ("destino", "text"),
+                ("afuera_ciudad", "integer"),
                 ("estrellas", "integer"),
                 ("puntuacion_resenias", "integer"),
                 ("cant_comentarios ", "integer"),
@@ -78,10 +80,16 @@ class BookingScrapper:
         self.currency = "USD"
         self.__driver = self.__get_webdriver() 
 
+    def __del__(self):
+        self.__driver.quit()
+
     def __get_webdriver(self):
         s = Session()
         dr = webdriver.Chrome()
         return dr
+
+    def __close_window(self):
+        self.__driver.close()
 
     def __get_webelement_by_xpath(self, xpath:str, els_list = True):
         if els_list:
@@ -145,7 +153,7 @@ class BookingScrapper:
                 time.sleep(2)
                 self.__click_btn_with_script(btn_el)
             time.sleep(wait)
-        return [Hotel.parse_html(f'<div>{elem.get_attribute("innerHTML")}</div>') for elem in prop_elements]
+        return [Hotel.parse_html(f'<div>{elem.get_attribute("innerHTML")}</div>', self.location) for elem in prop_elements]
 
     def prepare_request (self):
         method = 'GET'
@@ -185,13 +193,13 @@ class BookingScrapper:
         if len(self.__hotel_list) == 0:
             get_hotels(5)
         results = []
+        i = 0
         for hotel in self.__hotel_list:
             fail_to_fetch = False
             self.__driver.get(hotel.bookingLink);
             error_load_el = self.__xpath_dic["Error404"]
             if self.__is_elem_present(error_load_el):
                 retries = list(range(3))
-                i = 0
                 for i in retries:
                     self.__driver.get(hotel.bookingLink);
                     time.sleep(wait_secs_after_load);
@@ -201,11 +209,13 @@ class BookingScrapper:
                         fail_to_fetch = True
                         break;
             if fail_to_fetch:
+                i = i+1
                 continue;
             time.sleep(wait_secs_after_load);
             offers_list = self.__get_webelement_by_xpath_key("RoomTableRow")
-            highlights_el = self.__get_webelement_by_xpath_key("HotelHighlights")[0]
-            hotel.parse_highlights_html(highlights_el.get_attribute('outerHTML'))
+            highlights_els = self.__get_webelement_by_xpath_key("HotelHighlights")
+            if len(highlights_els) > 0:
+                hotel.parse_highlights_html(highlights_els[0].get_attribute('outerHTML'))
             first_room_offer = 1
             result_dic = {
                 "Room": None,
@@ -227,7 +237,9 @@ class BookingScrapper:
                     first_cell_next_row = self.__get_child_webelement_by_tag('td', offers_list[it+1])[0]
                     if (not first_cell_next_row.get_attribute('rowspan') is None):
                         results.append(result_dic.copy())
+            i = i+1
         self.__rooms_and_offers_list = results
+        self.__close_window()
         return results
         
     def save_to_db_sqlite(self, db_dir:str = None):

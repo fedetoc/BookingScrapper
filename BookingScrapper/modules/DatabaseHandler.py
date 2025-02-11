@@ -163,7 +163,7 @@ class DatabaseHandler:
                 raise(self.__construct_sqlite_exception(err, f'eliminar la tabla {tbl}'))
                 return
 
-    def close_connection():
+    def close_connection(self):
         if not self.__cursor is None:
             self.__cursor.close()
         if not self.__connection is None:

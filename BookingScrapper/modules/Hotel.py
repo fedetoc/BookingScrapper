@@ -16,6 +16,7 @@ class Hotel:
     tiene_gim = None
     tiene_pileta = None
     traslado_aeropuerto_gratis = None
+    afuera_ciudad = None
     __locators = {
         "Nombre": Locator('div', 'data-testid', 'title'),
         "Impuesto": Locator('div', 'data-testid', 'taxes-and-charges'),
@@ -26,9 +27,10 @@ class Hotel:
     }
     
     @staticmethod
-    def parse_html(html):
+    def parse_html(html, dest:str):
        hotel = Hotel()
        hotel.__html_soup = BeautifulSoup(html, 'html.parser')
+       hotel.destino = dest
        hotel.nombre = hotel.__get_name()
        hotel.bookingLink = hotel.__get_link()
        hotel.stars = hotel.__get_stars()
@@ -57,7 +59,13 @@ class Hotel:
         if dist_el is None:
             return (-1, -1)
         dist_text = dist_el.get_text()
-        if " km" in dist_text:
+        if f" km de {self.destino}" in dist_text:
+            distancia_parsed = self.__parse_number(dist_text.replace(",", "."), [f' km de {self.destino}', "a "], ret_int=False) * 1000
+            self.afuera_ciudad = 1
+        elif f" m de {self.destino}" in dist_text:
+            distancia_parsed = self.__parse_number(dist_text.replace(",", "."), [f' m de {self.destino}', "a "], ret_int=False)
+            self.afuera_ciudad = 1
+        elif " km" in dist_text:
             distancia_parsed = self.__parse_number(dist_text.replace(",", "."), ["a ", " km del centro"], ret_int=False) * 1000
         else:
             distancia_parsed = self.__parse_number(dist_text.replace(",", "."), ["a ", " m del centro"], ret_int=False)
@@ -79,7 +87,7 @@ class Hotel:
         if dist_playa_text == "Frente a la playa":
             dist_playa = 0
         elif " m " in dist_playa_text:
-            dist_playa = self.__parse_number(dist_playa_text, ["A ", " m de la playa"])
+            dist_playa = self.__parse_number(dist_playa_text, ["A ", " m de la playa", "."])
         elif " km " in dist_playa_text:
             dist_playa = self.__parse_number(
                     dist_playa_text.replace(",", "."), ["A ", " km de la playa"], ret_int = False
@@ -118,10 +126,10 @@ class Hotel:
 
     def get_hotel_data(self):
         return (
-            self.nombre, self.stars, self.review_score, \
+            self.nombre, self.destino, self.afuera_ciudad, self.stars, self.review_score, \
             self.cant_comentarios, self.distanciadelcentro, \
             self.distanciadelaplaya, self.tiene_estacionamiento, \
-            self.estacionamiento_gratis, self.tiene_gim, \
+            self.estacionamiento_gratis, self.tiene_gim,  \
             self.tiene_pileta, self.traslado_aeropuerto_gratis, self.bookingLink
         )
 
