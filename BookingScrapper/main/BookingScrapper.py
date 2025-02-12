@@ -81,7 +81,7 @@ class BookingScrapper:
         self.__driver = self.__get_webdriver() 
 
     def __del__(self):
-        self.__driver.quit()
+        self.end_driver_session()
 
     def __get_webdriver(self):
         s = Session()
@@ -282,5 +282,8 @@ class BookingScrapper:
          dbh.insert_into_table(tbl, data_to_insert[tbl])
         
         return dbh
+        
+    def end_driver_session(self):
+        self.__driver.quit()
                 
                 
