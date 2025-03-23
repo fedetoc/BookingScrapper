@@ -73,6 +73,15 @@ class DatabaseHandler:
         error_name = err.sqlite_errorname
         return Exception(f'Ocurrio un error al intentar {accion}: Codigo {error_code}. Nombre {error_name}')
 
+    def __replace_values(self, text_to_search:str, vals:list[tuple], regex=False):
+        final_text = text_to_search
+        for val in vals:
+            if regex:
+                final_text = re.sub(val[0], val[1], final_text, flags=re.MULTILINE)
+            else:
+                final_text = final_text.replace(val[0], val[1])
+        return final_text
+
     def create_tables(self, schema_defs:dict = None):
         tbl_defs = {}
         if schema_defs is None:
@@ -162,6 +171,27 @@ class DatabaseHandler:
             except sqlite3.Error as err:
                 raise(self.__construct_sqlite_exception(err, f'eliminar la tabla {tbl}'))
                 return
+
+    def create_backup(self, path:str, file_name=None):
+        if file_name is None:
+            dt_now = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S_%f")
+            file_name = f"{dt_now}_backup.sql"
+        full_path = path + "/" +file_name
+        vals_to_replace_before = [
+            ("\\", '')
+            , ('INSERT INTO "', "INSERT INTO ")
+            , ('" VALUES', " VALUES")
+            , ('"', "'")
+        ]
+        vals_to_replace_after = [("^b[\'\"]", ''), (""";["']$""", ";")]
+        with io.open(full_path, "w") as file:
+            for line in self.__connection.iterdump():
+                encoded_l = self.__replace_values(line, vals_to_replace_before).encode(sys.stdout.encoding, errors='replace')
+                line_cleaned =  self.__replace_values('%s\n' % encoded_l, vals_to_replace_after, True)
+                file.write(line_cleaned)
+        print("Backup file succesfully created in following path:")
+        print(full_path)
+        return full_path
 
     def close_connection(self):
         if not self.__cursor is None:

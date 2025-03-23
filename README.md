@@ -149,6 +149,17 @@ Finally, the following code can be used to merge all the data stored in the db i
 
 ```
 
+### Create a backup file
+
+It is possible to create a backup of the Database in a .sql file just by providing a destination folder path (str) and an optional file name (str). This returns a string with the full path of the created file:
+
+```
+
+    # Create backup file
+    path_to_file = db_obj.create_backup(r"C:\scripts")
+
+```
+
 ### Close db connection
 
 Once finished with the db operations, it's important to close it to avoid memory leakage. You can do so by calling the following:
